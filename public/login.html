@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<title>输入密码 · 局域网快传</title>
+<style>
+  :root{
+    --bg:#f5f6fa;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e6e8ef;
+    --accent:#4f46e5;--accent-soft:#eef0ff;--danger:#e11d48;
+    --shadow:0 1px 2px rgba(17,24,39,.04),0 12px 32px rgba(17,24,39,.08);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#0e1016;--card:#171a22;--ink:#f3f4f6;--muted:#9ca3af;--line:#262a35;
+      --accent:#818cf8;--accent-soft:#1e2233;--shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.35)}
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:24px 18px;background:radial-gradient(900px 500px at 50% -160px,var(--accent-soft),transparent 70%),var(--bg);
+    color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,sans-serif;
+    font-size:15px;line-height:1.5;
+  }
+  .card{
+    width:100%;max-width:360px;background:var(--card);border:1px solid var(--line);
+    border-radius:20px;padding:30px 24px 26px;box-shadow:var(--shadow);text-align:center;
+  }
+  .logo{
+    width:52px;height:52px;margin:0 auto 16px;border-radius:16px;display:grid;place-items:center;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
+    box-shadow:0 10px 22px rgba(99,102,241,.32);
+  }
+  h1{font-size:19px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+  form{display:flex;flex-direction:column;gap:12px}
+  input{
+    width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+    border-radius:12px;padding:12px 14px;font-family:inherit;font-size:16px;
+    text-align:center;letter-spacing:.08em;outline:none;transition:.15s;
+  }
+  input:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px var(--accent-soft)}
+  button{
+    border:none;border-radius:12px;padding:12px;color:#fff;font-family:inherit;font-size:15px;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);cursor:pointer;transition:.15s;
+    box-shadow:0 8px 18px rgba(99,102,241,.28);
+  }
+  button:active{transform:scale(.985)}
+  button:disabled{opacity:.6;cursor:default}
+  .err{
+    color:var(--danger);font-size:13px;min-height:18px;margin:0;
+    opacity:0;transition:.15s;
+  }
+  .err.show{opacity:1}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="10" width="16" height="10" rx="2.5"/>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+      </svg>
+    </div>
+    <h1>局域网快传</h1>
+    <p class="sub">需要密码才能访问</p>
+    <form id="form" autocomplete="off">
+      <input id="pwd" type="password" inputmode="text" placeholder="输入访问密码" autocomplete="current-password" required>
+      <button id="btn" type="submit">进入</button>
+      <p class="err" id="err"></p>
+    </form>
+  </div>
+
+<script>
+(function () {
+  var form = document.getElementById('form');
+  var pwd = document.getElementById('pwd');
+  var btn = document.getElementById('btn');
+  var err = document.getElementById('err');
+
+  function showErr(msg) {
+    err.textContent = msg;
+    err.classList.add('show');
+    pwd.select();
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var value = pwd.value;
+    if (!value) return;
+    btn.disabled = true;
+    err.classList.remove('show');
+
+    fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: value })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res && res.ok) {
+          location.replace('/');
+          return;
+        }
+        btn.disabled = false;
+        showErr((res && res.error) || '密码不正确');
+      })
+      .catch(function () {
+        btn.disabled = false;
+        showErr('网络错误，请重试');
+      });
+  });
+
+  pwd.focus();
+})();
+</script>
+</body>
+</html>

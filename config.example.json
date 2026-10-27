@@ -1,0 +1,5 @@
+{
+  "passwordEnabled": true,
+  "password": "换成你自己的密码",
+  "secret": "换成一串随机字符串"
+}
