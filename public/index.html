@@ -188,6 +188,73 @@
     cursor:pointer;flex:none;transition:.15s;
   }
   .send:active{transform:scale(.97)}
+  .game{
+    margin-top:26px;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;
+  }
+  .game-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:13px 15px;border-bottom:1px solid var(--line);
+  }
+  .game-tag{
+    font-size:12px;color:var(--accent);background:var(--accent-soft);
+    padding:3px 9px;border-radius:99px;font-variant-numeric:tabular-nums;
+  }
+  .board-wrap{padding:18px 12px 10px;display:flex;justify-content:center;overflow-x:auto}
+  .board{display:grid;gap:2px;outline:none;user-select:none;touch-action:manipulation}
+  .board:focus-visible{box-shadow:0 0 0 3px var(--accent-soft);border-radius:10px}
+  .cell{
+    position:relative;width:var(--cs,30px);height:var(--cs,30px);
+    border-radius:6px;display:grid;place-items:center;background:transparent;
+  }
+  .cell > *{position:relative;z-index:1}
+  .cell.wall{background:linear-gradient(160deg,#4b4f63,#2c2f3c);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+  .cell.floor{background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+  .cell.goal{background:var(--accent-soft)}
+  .cell.goal::after{
+    content:"";position:absolute;width:26%;height:26%;border-radius:50%;
+    background:rgba(99,102,241,.45);z-index:0;
+  }
+  .box{
+    width:78%;height:78%;border-radius:5px;
+    background:linear-gradient(160deg,#d19a4e,#a0671f);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.3),0 1px 2px rgba(0,0,0,.18);
+    transition:background .12s;
+  }
+  .box.on{background:linear-gradient(160deg,#4ade80,#059669)}
+  .player{
+    width:64%;height:64%;border-radius:50%;
+    background:linear-gradient(160deg,#6366f1,#8b5cf6);
+    box-shadow:0 2px 6px rgba(99,102,241,.5);
+  }
+  .game-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:2px 15px 12px;flex-wrap:wrap;
+  }
+  .game-status{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .game-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .game-hint{
+    margin:0;padding:0 15px 8px;text-align:center;
+    font-size:11.5px;color:var(--muted);line-height:1.5;
+  }
+  .dpad{
+    display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);
+    gap:6px;justify-content:center;padding:0 0 18px;
+  }
+  .pad-btn{
+    border:1px solid var(--line);background:var(--card);color:var(--muted);
+    border-radius:12px;cursor:pointer;display:grid;place-items:center;
+    font-family:inherit;font-size:13px;transition:.12s;
+  }
+  .pad-btn:active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);transform:scale(.96)}
+  .pad-up{grid-area:1/2}
+  .pad-left{grid-area:2/1}
+  .pad-center{grid-area:2/2;display:grid;place-items:center;color:var(--line);font-size:12px}
+  .pad-right{grid-area:2/3}
+  .pad-down{grid-area:3/2}
+  .game.win{box-shadow:0 0 0 2px rgba(16,185,129,.35),var(--shadow)}
+  .game.win .board{animation:winscale .5s ease}
+  @keyframes winscale{0%{transform:scale(1)}40%{transform:scale(1.035)}100%{transform:scale(1)}}
   .toast{
     position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(10px);
     background:#111827;color:#fff;padding:9px 16px;border-radius:99px;font-size:13px;
@@ -261,6 +328,33 @@
       <span id="count"></span>
     </div>
     <ul id="list"></ul>
+  </section>
+
+  <section class="game" id="gameSection">
+    <div class="game-head">
+      <h2>推箱子</h2>
+      <span class="game-tag" id="sokoLevel">第 1 关</span>
+    </div>
+    <div class="board-wrap">
+      <div class="board" id="sokoBoard" tabindex="0"></div>
+    </div>
+    <div class="game-bar">
+      <span class="game-status" id="sokoStatus">步数 0</span>
+      <div class="game-actions">
+        <button class="btn" id="sokoUndo" type="button">撤销</button>
+        <button class="btn" id="sokoRestart" type="button">重来</button>
+        <button class="btn" id="sokoPrev" type="button">上一关</button>
+        <button class="btn" id="sokoNext" type="button">下一关</button>
+      </div>
+    </div>
+    <p class="game-hint">电脑：方向键 / WASD 移动，Z 撤销，R 重来；手机：滑动棋盘或点下方按键</p>
+    <div class="dpad">
+      <button class="pad-btn pad-up" data-dir="up" type="button" aria-label="上">▲</button>
+      <button class="pad-btn pad-left" data-dir="left" type="button" aria-label="左">◀</button>
+      <div class="pad-center">·</div>
+      <button class="pad-btn pad-right" data-dir="right" type="button" aria-label="右">▶</button>
+      <button class="pad-btn pad-down" data-dir="down" type="button" aria-label="下">▼</button>
+    </div>
   </section>
 </div>
 
@@ -599,6 +693,206 @@
       })
       .catch(function () { toast('发送失败'); });
   });
+
+  // ---------- 推箱子小游戏 ----------
+  var SOKO_LEVELS = [
+    ['#######', '#  .  #', '#     #', '#  $  #', '#  @  #', '#     #', '#######'],
+    ['######', '#    #', '# .$ #', '# @  #', '#    #', '######'],
+    ['#########', '#       #', '#  $ $  #', '#  . .  #', '#   @   #', '#       #', '#########'],
+    ['#########', '#  . .  #', '#  $ $  #', '#       #', '#  $ .  #', '#   @   #', '#########'],
+    ['#########', '#  .... #', '#  $$$  #', '#   $   #', '#   @   #', '#       #', '#########'],
+    ['#########', '#   .   #', '#  ###  #', '# .$ $  #', '#  $ $  #', '#  . .  #', '#   @   #', '#########'],
+    ['#########', '#       #', '# $ $ $ #', '#  ...  #', '#   @   #', '#       #', '#########'],
+    ['#########', '#       #', '#  $ $  #', '#  ###  #', '# .   . #', '#   @   #', '#########'],
+    ['########', '#  . . #', '#  $ $ #', '# .#.  #', '#  $ $ #', '#   @  #', '########'],
+    ['#########', '# ....  #', '# $ $ $ #', '#   #   #', '#   $   #', '#   @   #', '#########']
+  ];
+
+  var soko = { idx: 0, rows: 0, cols: 0, walls: [], goals: [], boxes: [], player: { r: 0, c: 0 }, moves: 0, history: [], win: false };
+  var sokoBoard = document.getElementById('sokoBoard');
+  var sokoStatus = document.getElementById('sokoStatus');
+  var sokoLevelEl = document.getElementById('sokoLevel');
+  var gameSection = document.getElementById('gameSection');
+
+  function sokoInside(r, c) {
+    return r >= 0 && c >= 0 && r < soko.rows && c < soko.cols;
+  }
+
+  function sokoBoxIndex(r, c) {
+    for (var i = 0; i < soko.boxes.length; i++) {
+      if (soko.boxes[i].r === r && soko.boxes[i].c === c) return i;
+    }
+    return -1;
+  }
+
+  function sokoLoad(idx) {
+    var map = SOKO_LEVELS[idx];
+    soko.idx = idx;
+    soko.rows = map.length;
+    soko.cols = Math.max.apply(null, map.map(function (row) { return row.length; }));
+    soko.walls = [];
+    soko.goals = [];
+    soko.boxes = [];
+    soko.history = [];
+    soko.moves = 0;
+    soko.win = false;
+    for (var r = 0; r < soko.rows; r++) {
+      soko.walls[r] = [];
+      soko.goals[r] = [];
+      for (var c = 0; c < soko.cols; c++) {
+        var ch = map[r][c] || ' ';
+        soko.walls[r][c] = ch === '#';
+        soko.goals[r][c] = ch === '.' || ch === '*' || ch === '+';
+        if (ch === '$' || ch === '*') soko.boxes.push({ r: r, c: c });
+        if (ch === '@' || ch === '+') soko.player = { r: r, c: c };
+      }
+    }
+    gameSection.classList.remove('win');
+    sokoRender();
+  }
+
+  function sokoRender() {
+    var wrap = sokoBoard.parentNode;
+    var cs = Math.floor((wrap.clientWidth - 24) / soko.cols) - 2;
+    cs = Math.max(22, Math.min(38, cs));
+    sokoBoard.style.setProperty('--cs', cs + 'px');
+    sokoBoard.style.gridTemplateColumns = 'repeat(' + soko.cols + ', ' + cs + 'px)';
+    sokoBoard.textContent = '';
+
+    var occupied = {};
+    soko.boxes.forEach(function (b) { occupied[b.r + ',' + b.c] = true; });
+
+    for (var r = 0; r < soko.rows; r++) {
+      for (var c = 0; c < soko.cols; c++) {
+        var cell = document.createElement('div');
+        cell.className = 'cell ' + (soko.walls[r][c] ? 'wall' : 'floor');
+        if (soko.goals[r][c]) cell.classList.add('goal');
+        if (occupied[r + ',' + c]) {
+          var box = document.createElement('div');
+          box.className = 'box' + (soko.goals[r][c] ? ' on' : '');
+          cell.appendChild(box);
+        } else if (soko.player.r === r && soko.player.c === c) {
+          var player = document.createElement('div');
+          player.className = 'player';
+          cell.appendChild(player);
+        }
+        sokoBoard.appendChild(cell);
+      }
+    }
+    sokoStatus.textContent = soko.win ? '过关！' : '步数 ' + soko.moves;
+    sokoLevelEl.textContent = '第 ' + (soko.idx + 1) + ' / ' + SOKO_LEVELS.length + ' 关';
+  }
+
+  function sokoSnapshot() {
+    return {
+      boxes: soko.boxes.map(function (b) { return { r: b.r, c: b.c }; }),
+      player: { r: soko.player.r, c: soko.player.c },
+      moves: soko.moves
+    };
+  }
+
+  function sokoMove(dr, dc) {
+    if (soko.win) return;
+    var nr = soko.player.r + dr;
+    var nc = soko.player.c + dc;
+    if (!sokoInside(nr, nc) || soko.walls[nr][nc]) return;
+
+    var boxIndex = sokoBoxIndex(nr, nc);
+    var nextBox = null;
+    if (boxIndex >= 0) {
+      var br = nr + dr;
+      var bc = nc + dc;
+      if (!sokoInside(br, bc) || soko.walls[br][bc] || sokoBoxIndex(br, bc) >= 0) return;
+      nextBox = { r: br, c: bc };
+    }
+
+    soko.history.push(sokoSnapshot());
+    if (soko.history.length > 300) soko.history.shift();
+    if (nextBox) soko.boxes[boxIndex] = nextBox;
+
+    soko.player = { r: nr, c: nc };
+    soko.moves++;
+    soko.win = soko.boxes.every(function (b) { return soko.goals[b.r][b.c]; });
+    if (soko.win) {
+      gameSection.classList.add('win');
+      toast('第 ' + (soko.idx + 1) + ' 关通过，用了 ' + soko.moves + ' 步');
+    }
+    sokoRender();
+  }
+
+  function sokoUndo() {
+    var last = soko.history.pop();
+    if (!last) return;
+    soko.boxes = last.boxes;
+    soko.player = last.player;
+    soko.moves = last.moves;
+    soko.win = false;
+    gameSection.classList.remove('win');
+    sokoRender();
+  }
+
+  document.getElementById('sokoUndo').addEventListener('click', sokoUndo);
+  document.getElementById('sokoRestart').addEventListener('click', function () { sokoLoad(soko.idx); });
+  document.getElementById('sokoPrev').addEventListener('click', function () {
+    sokoLoad((soko.idx - 1 + SOKO_LEVELS.length) % SOKO_LEVELS.length);
+  });
+  document.getElementById('sokoNext').addEventListener('click', function () {
+    sokoLoad((soko.idx + 1) % SOKO_LEVELS.length);
+  });
+
+  var SOKO_DIRS = { up: [-1, 0], down: [1, 0], left: [0, -1], right: [0, 1] };
+  Array.prototype.forEach.call(document.querySelectorAll('.pad-btn'), function (btn) {
+    btn.addEventListener('click', function () {
+      var dir = SOKO_DIRS[btn.getAttribute('data-dir')];
+      if (dir) sokoMove(dir[0], dir[1]);
+    });
+  });
+
+  var sokoEnabled = null;
+  gameSection.addEventListener('pointerdown', function () { sokoEnabled = true; });
+  document.addEventListener('pointerdown', function (e) {
+    if (!gameSection.contains(e.target)) sokoEnabled = false;
+  });
+
+  document.addEventListener('keydown', function (e) {
+    var tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (sokoEnabled === false) return;
+    if (sokoEnabled !== true) {
+      var rect = gameSection.getBoundingClientRect();
+      if (rect.bottom < 80 || rect.top > window.innerHeight - 80) return;
+    }
+
+    var key = String(e.key);
+    var dirs = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1], w: [-1, 0], s: [1, 0], a: [0, -1], d: [0, 1] };
+    var dir = dirs[key] || dirs[key.toLowerCase()];
+    if (dir) {
+      e.preventDefault();
+      sokoMove(dir[0], dir[1]);
+      return;
+    }
+    if (key === 'z' || key === 'Z') { e.preventDefault(); sokoUndo(); }
+    else if (key === 'r' || key === 'R') { e.preventDefault(); sokoLoad(soko.idx); }
+  });
+
+  var sokoTouch = null;
+  sokoBoard.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) return;
+    sokoTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, { passive: true });
+  sokoBoard.addEventListener('touchend', function (e) {
+    if (!sokoTouch) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - sokoTouch.x;
+    var dy = t.clientY - sokoTouch.y;
+    sokoTouch = null;
+    if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+    if (Math.abs(dx) > Math.abs(dy)) sokoMove(0, dx > 0 ? 1 : -1);
+    else sokoMove(dy > 0 ? 1 : -1, 0);
+  });
+
+  window.addEventListener('resize', function () { sokoRender(); });
+  sokoLoad(0);
 
   pollChat();
   setInterval(pollChat, 1500);
